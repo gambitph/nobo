@@ -1,0 +1,27 @@
+{
+  "site": {
+    "title": "My NoBo Site",
+    "description": "A site built with NoBo - a Next.js static site platform",
+    "url": "http://localhost:3000",
+    "language": "en",
+    "timezone": "UTC"
+  },
+  "theme": "default",
+  "plugins": [],
+  "admin": {
+    "username": "admin",
+    "password": "admin123"
+  },
+  "build": {
+    "outputDir": "out",
+    "trailingSlash": false,
+    "generateSitemap": true,
+    "generateRSS": true
+  },
+  "seo": {
+    "metaTitle": "",
+    "metaDescription": "",
+    "ogImage": "",
+    "twitterCard": "summary_large_image"
+  }
+}

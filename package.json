@@ -1,0 +1,33 @@
+{
+  "name": "nobo",
+  "version": "1.0.0",
+  "description": "NoBo - Publishing made simple",
+  "type": "module",
+  "main": "bin/nobo.js",
+  "scripts": {
+    "dev": "cd example-site && npm run dev",
+    "build": "cd example-site && npm run build:public",
+    "create-site": "node scripts/create-site.js",
+    "build-core": "cd packages/nobo-core && npm run build"
+  },
+  "bin": {
+    "nobo": "./bin/nobo.js"
+  },
+  "keywords": [
+    "cms",
+    "nextjs",
+    "static",
+    "json",
+    "gutenberg"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.12"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Default Theme",
+  "version": "1.0.0",
+  "description": "A simple default theme for NoBo",
+  "author": "NoBo Team",
+  "styles": ["style.css"],
+  "templates": {
+    "index": "index.html",
+    "post": "post.html",
+    "page": "page.html"
+  }
+}
