@@ -9,6 +9,10 @@ yarn-error.log*
 out/
 build/
 
+# NoBo build cache
+.nobo-cache.json
+out/.build-marker
+
 # Environment variables
 .env
 .env.local

@@ -54,6 +54,7 @@ async function createSite(siteDir, siteName) {
   await fs.ensureDir(path.join(siteDir, 'pages', 'admin', 'posts'));
   await fs.ensureDir(path.join(siteDir, 'pages', 'posts'));
   await fs.ensureDir(path.join(siteDir, 'styles'));
+  await fs.ensureDir(path.join(siteDir, 'scripts'));
 
   // Copy example site files
   const exampleDir = path.join(__dirname, '..', 'example-site');
@@ -72,6 +73,7 @@ async function copyExampleFiles(exampleDir, siteDir, siteName) {
     'pages/admin/posts/new.js',
     'pages/admin/posts/[slug].js',
     'styles/globals.css',
+    'scripts/build-public.js',
     'content/config.json',
     'content/posts/hello-world.json',
     'content/posts/getting-started.json',

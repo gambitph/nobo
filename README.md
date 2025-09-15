@@ -13,6 +13,7 @@ A Next.js static site platform that works like a CMS but stores all content in J
 - 📱 **Responsive** - Mobile-first design
 - ⚡ **Fast** - Static site generation for optimal performance
 - 🔒 **Secure** - Admin pages excluded from production builds
+- 🔄 **Updatable** - Easy updates without losing content
 
 ## Quick Start
 
@@ -33,6 +34,22 @@ npm install
 npm run dev
 ```
 
+### Update an existing site
+
+```bash
+# Update from within the site directory
+npx nobo update
+
+# Update a specific site directory
+npx nobo update /path/to/site
+
+# Preview what would be updated (dry run)
+npx nobo update --dry-run
+
+# Force update without confirmation
+npx nobo update --force
+```
+
 ## Project Structure
 
 ```
@@ -45,7 +62,7 @@ my-site/
 │  └─ config.json           # Active theme, active plugins, site settings
 ├─ node_modules/
 ├─ package.json
-├─ next.config.js
+├─ next.config.cjs
 └─ (nobo-core provides all core logic)
 ```
 
@@ -78,9 +95,10 @@ Content is stored as a string of Gutenberg block markup (similar to WordPress), 
 ## Build Process
 
 - `npm run dev` → launches Next.js dev server with admin features enabled
-- `npm run build` → generates a static site that can be deployed to Cloudflare Pages/Netlify
+- `npm run build` → generates a static site for deployment to any platform
 - `npm run build:public` → same as build, explicitly excludes admin pages
 - Uses `next export` (default output goes to `/out`)
+- **Universal deployment** - works with any static hosting platform
 
 ## Development vs Production
 
@@ -94,6 +112,56 @@ Content is stored as a string of Gutenberg block markup (similar to WordPress), 
 - Admin pages automatically excluded
 - Optimized for static hosting
 - No server-side dependencies
+
+## Deployment
+
+NoBo sites work with **any static hosting platform** without host-specific configuration:
+
+### Universal Setup
+- **Build command**: `npm run build`
+- **Output directory**: `out`
+- **Node.js version**: 18+
+
+### Supported Platforms
+- ✅ **Cloudflare Pages** - Just set build command and output directory
+- ✅ **Netlify** - Standard Node.js build process
+- ✅ **Vercel** - Works out of the box
+- ✅ **GitHub Pages** - Via Actions or direct upload
+- ✅ **Any static host** - Standard static files
+
+### No Vendor Lock-in
+- No host-specific configuration files required
+- Easy migration between platforms
+- Standard Node.js build process
+- Works with any CI/CD system
+
+## Updating Your Site
+
+NoBo provides easy updates that preserve your content while updating core functionality:
+
+### What Gets Updated
+- Core files (pages, components, build scripts)
+- Package.json scripts and dependencies
+- Next.js configuration
+- Build process improvements
+
+### What Stays Safe
+- All content in `content/` folder
+- Your custom themes and plugins
+- Site configuration and settings
+
+### Update Commands
+
+```bash
+# Check what would be updated (safe to run)
+npx nobo update --dry-run
+
+# Update your site
+npx nobo update
+
+# Force update without confirmation
+npx nobo update --force
+```
 
 ## Extensibility
 

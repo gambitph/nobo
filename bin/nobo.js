@@ -40,6 +40,28 @@ program
   });
 
 program
+  .command('update [directory]')
+  .description('Update an existing NoBo site with latest core files')
+  .option('-f, --force', 'Force update even if there are conflicts')
+  .option('--dry-run', 'Show what would be updated without making changes')
+  .action(async (directory = '.', options) => {
+    const siteDir = path.resolve(directory);
+    
+    console.log(`🔄 Updating NoBo site in: ${siteDir}`);
+    
+    try {
+      await updateSite(siteDir, options);
+      console.log(`\n✅ Site updated successfully!`);
+      console.log(`\nNext steps:`);
+      console.log(`  npm install  # Install any new dependencies`);
+      console.log(`  npm run dev  # Test the updated site`);
+    } catch (error) {
+      console.error('❌ Update failed:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
   .command('init')
   .description('Initialize NoBo in the current directory')
   .action(async () => {
@@ -97,6 +119,137 @@ async function createSite(siteDir, siteName) {
   await copyExampleFiles(exampleDir, siteDir, siteName);
 }
 
+async function updateSite(siteDir, options) {
+  // Check if this is a NoBo site
+  const packageJsonPath = path.join(siteDir, 'package.json');
+  if (!await fs.pathExists(packageJsonPath)) {
+    throw new Error('No package.json found. This doesn\'t appear to be a NoBo site.');
+  }
+
+  const packageJson = await fs.readJson(packageJsonPath);
+  if (!packageJson.dependencies || !packageJson.dependencies.next) {
+    throw new Error('This doesn\'t appear to be a NoBo site (missing Next.js dependency).');
+  }
+
+  console.log('📋 Files to update:');
+  
+  // Files to update (excluding content/)
+  const filesToUpdate = [
+    'package.json',
+    'next.config.cjs',
+    'pages/_app.js',
+    'pages/index.js',
+    'pages/posts/[slug].js',
+    'pages/admin/index.js',
+    'pages/admin/posts/index.js',
+    'pages/admin/posts/new.js',
+    'pages/admin/posts/[slug].js',
+    'styles/globals.css',
+    'scripts/build-public.js'
+  ];
+
+  const exampleDir = path.join(__dirname, '..', 'example-site');
+  const updates = [];
+
+  for (const file of filesToUpdate) {
+    const srcPath = path.join(exampleDir, file);
+    const destPath = path.join(siteDir, file);
+    
+    if (await fs.pathExists(srcPath)) {
+      const srcContent = await fs.readFile(srcPath, 'utf8');
+      let destContent = '';
+      
+      if (await fs.pathExists(destPath)) {
+        destContent = await fs.readFile(destPath, 'utf8');
+      }
+      
+      if (srcContent !== destContent) {
+        updates.push({
+          file,
+          action: await fs.pathExists(destPath) ? 'update' : 'create',
+          size: srcContent.length
+        });
+      }
+    }
+  }
+
+  if (updates.length === 0) {
+    console.log('✅ Site is already up to date!');
+    return;
+  }
+
+  // Show what will be updated
+  updates.forEach(update => {
+    console.log(`  ${update.action === 'create' ? '➕' : '🔄'} ${update.file} (${update.size} bytes)`);
+  });
+
+  if (options.dryRun) {
+    console.log('\n🔍 Dry run complete. No files were modified.');
+    return;
+  }
+
+  // Confirm update
+  if (!options.force) {
+    console.log(`\n⚠️  This will update ${updates.length} files.`);
+    console.log('💡 Use --force to skip this confirmation.');
+    console.log('💡 Use --dry-run to see what would be updated.');
+    return;
+  }
+
+  console.log('\n📝 Updating files...');
+
+  // Create necessary directories
+  await fs.ensureDir(path.join(siteDir, 'scripts'));
+  await fs.ensureDir(path.join(siteDir, 'styles'));
+  await fs.ensureDir(path.join(siteDir, 'pages', 'admin', 'posts'));
+  await fs.ensureDir(path.join(siteDir, 'pages', 'posts'));
+
+  // Update files
+  for (const update of updates) {
+    const srcPath = path.join(exampleDir, update.file);
+    const destPath = path.join(siteDir, update.file);
+    
+    await fs.ensureDir(path.dirname(destPath));
+    await fs.writeFile(destPath, await fs.readFile(srcPath, 'utf8'));
+    console.log(`  ✅ ${update.action === 'create' ? 'Created' : 'Updated'} ${update.file}`);
+  }
+
+  // Update package.json scripts if needed
+  await updatePackageScripts(siteDir);
+
+  console.log('\n🎉 Update complete!');
+  console.log('\n📋 Summary:');
+  console.log(`  • Updated ${updates.length} files`);
+  console.log(`  • Preserved all content in content/ folder`);
+  console.log(`  • Updated build process and core functionality`);
+}
+
+async function updatePackageScripts(siteDir) {
+  const packageJsonPath = path.join(siteDir, 'package.json');
+  const packageJson = await fs.readJson(packageJsonPath);
+  
+  const newScripts = {
+    dev: 'next dev',
+    build: 'next build',
+    'build:public': 'node scripts/build-public.js',
+    start: 'next start',
+    export: 'npm run build:public'
+  };
+
+  let updated = false;
+  for (const [script, command] of Object.entries(newScripts)) {
+    if (packageJson.scripts[script] !== command) {
+      packageJson.scripts[script] = command;
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
+    console.log('  ✅ Updated package.json scripts');
+  }
+}
+
 async function initSite(answers) {
   const currentDir = process.cwd();
   
@@ -130,34 +283,33 @@ async function initSite(answers) {
     version: packageJson.version || '1.0.0',
     description: packageJson.description || answers.siteDescription,
     private: true,
+    type: 'module',
     scripts: {
       ...packageJson.scripts,
       dev: 'next dev',
       build: 'next build',
+      'build:public': 'node scripts/build-public.js',
       start: 'next start',
-      export: 'next build && next export'
+      export: 'npm run build:public'
     },
     dependencies: {
       ...packageJson.dependencies,
       next: '^14.0.0',
       react: '^18.2.0',
-      react-dom: '^18.2.0',
-      nobo-core: 'file:../packages/nobo-core'
+      'react-dom': '^18.2.0',
+      'nobo-core': 'file:../packages/nobo-core'
     }
   };
 
   await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
 
-  // Create next.config.js
+  // Create next.config.cjs
   const nextConfig = `/** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
-  },
-  experimental: {
-    appDir: false
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -172,7 +324,7 @@ const nextConfig = {
   }
 }
 
-module.exports = nextConfig
+export default nextConfig
 `;
 
   await fs.writeFile(path.join(currentDir, 'next.config.js'), nextConfig);
@@ -228,7 +380,7 @@ module.exports = nextConfig
 async function copyExampleFiles(exampleDir, siteDir, siteName) {
   const filesToCopy = [
     'package.json',
-    'next.config.js',
+    'next.config.cjs',
     'pages/_app.js',
     'pages/index.js',
     'pages/posts/[slug].js',
@@ -241,7 +393,8 @@ async function copyExampleFiles(exampleDir, siteDir, siteName) {
     'content/posts/hello-world.json',
     'content/posts/getting-started.json',
     'content/themes/default/theme.json',
-    'content/themes/default/style.css'
+    'content/themes/default/style.css',
+    'scripts/build-public.js'
   ];
 
   for (const file of filesToCopy) {
@@ -498,21 +651,21 @@ function getExcerpt(content, length = 150) {
 }
 
 export async function getStaticProps() {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = await import('fs');
+  const path = await import('path');
   
   try {
     // Read posts
-    const postsDir = path.join(process.cwd(), 'content', 'posts');
-    const postFiles = fs.readdirSync(postsDir).filter(file => file.endsWith('.json'));
+    const postsDir = path.default.join(process.cwd(), 'content', 'posts');
+    const postFiles = fs.default.readdirSync(postsDir).filter(file => file.endsWith('.json'));
     const posts = postFiles.map(file => {
-      const postPath = path.join(postsDir, file);
-      return JSON.parse(fs.readFileSync(postPath, 'utf8'));
+      const postPath = path.default.join(postsDir, file);
+      return JSON.parse(fs.default.readFileSync(postPath, 'utf8'));
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Read config
-    const configPath = path.join(process.cwd(), 'content', 'config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const configPath = path.default.join(process.cwd(), 'content', 'config.json');
+    const config = JSON.parse(fs.default.readFileSync(configPath, 'utf8'));
 
     return {
       props: {
@@ -561,21 +714,21 @@ export async function getStaticProps() {
 }
 
 export async function getStaticProps() {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = await import('fs');
+  const path = await import('path');
   
   try {
     // Read posts
-    const postsDir = path.join(process.cwd(), 'content', 'posts');
-    const postFiles = fs.readdirSync(postsDir).filter(file => file.endsWith('.json'));
+    const postsDir = path.default.join(process.cwd(), 'content', 'posts');
+    const postFiles = fs.default.readdirSync(postsDir).filter(file => file.endsWith('.json'));
     const posts = postFiles.map(file => {
-      const postPath = path.join(postsDir, file);
-      return JSON.parse(fs.readFileSync(postPath, 'utf8'));
+      const postPath = path.default.join(postsDir, file);
+      return JSON.parse(fs.default.readFileSync(postPath, 'utf8'));
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Read config
-    const configPath = path.join(process.cwd(), 'content', 'config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const configPath = path.default.join(process.cwd(), 'content', 'config.json');
+    const config = JSON.parse(fs.default.readFileSync(configPath, 'utf8'));
 
     return {
       props: {

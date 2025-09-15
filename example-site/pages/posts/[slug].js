@@ -58,15 +58,15 @@ export default function Post({ post, config }) {
 }
 
 export async function getStaticPaths() {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = await import('fs');
+  const path = await import('path');
   
   try {
-    const postsDir = path.join(process.cwd(), 'content', 'posts');
-    const postFiles = fs.readdirSync(postsDir).filter(file => file.endsWith('.json'));
+    const postsDir = path.default.join(process.cwd(), 'content', 'posts');
+    const postFiles = fs.default.readdirSync(postsDir).filter(file => file.endsWith('.json'));
     const posts = postFiles.map(file => {
-      const postPath = path.join(postsDir, file);
-      return JSON.parse(fs.readFileSync(postPath, 'utf8'));
+      const postPath = path.default.join(postsDir, file);
+      return JSON.parse(fs.default.readFileSync(postPath, 'utf8'));
     });
     
     const paths = posts.map((post) => ({
@@ -87,21 +87,21 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
-  const fs = require('fs');
-  const path = require('path');
+  const fs = await import('fs');
+  const path = await import('path');
   
   try {
-    const postPath = path.join(process.cwd(), 'content', 'posts', `${params.slug}.json`);
-    const configPath = path.join(process.cwd(), 'content', 'config.json');
+    const postPath = path.default.join(process.cwd(), 'content', 'posts', `${params.slug}.json`);
+    const configPath = path.default.join(process.cwd(), 'content', 'config.json');
     
-    if (!fs.existsSync(postPath)) {
+    if (!fs.default.existsSync(postPath)) {
       return {
         notFound: true
       };
     }
 
-    const post = JSON.parse(fs.readFileSync(postPath, 'utf8'));
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const post = JSON.parse(fs.default.readFileSync(postPath, 'utf8'));
+    const config = JSON.parse(fs.default.readFileSync(configPath, 'utf8'));
 
     return {
       props: {

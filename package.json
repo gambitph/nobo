@@ -8,6 +8,7 @@
     "dev": "cd example-site && npm run dev",
     "build": "cd example-site && npm run build:public",
     "create-site": "node scripts/create-site.js",
+    "update-site": "node scripts/update-site.js",
     "build-core": "cd packages/nobo-core && npm run build"
   },
   "bin": {
